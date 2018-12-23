@@ -5,6 +5,10 @@ Here we call a variant of a programming language described in the EOPL Book [1] 
 
 [1] D.P. Friedman and M. Wand: Essentials of Programming Languages, 3rd ed., The MIT Press, 2008.
 
+Currently, EOPL does not support types other than int and bool.
+Algebraic data type definitions are not available.
+Currying and partial evaluation of functions are not supported.
+
 ### Eamples
 
 It is a functional language.
@@ -55,7 +59,10 @@ For example, several parameters such as word size, the number of registers, and 
 The interpreter is implemented as defined in the EOPL Book [1].
 
 The compiler is underconstruction.
-Currently, we only support combinators, i.e., functions that do not refer to names defined outside their bodies, as values.
+Currently, we only support combinators, i.e., functions that do not refer to names defined outside their bodies, as first-class values.
+
+No optimization is performed.
+All code is generated directly from bare ASTs.
 
 ### How to build
 
@@ -75,6 +82,23 @@ Type `make` to build `rep_loop` and  `gen`. They are an interpreter and a compil
     ```
     $ perl vm.pl < obj.asm
     ```
+
+### Conventions
+- Both a frame pointer and a stack pointer are used.
+Local variables are referenced to by using a frame pointer.
+Arguments are passed to another function via stack.
+A returned value from a function is passed via a register which is designated in advance.
+- All expressions are evaluated by using the stack:
+for example, operands for a binary operation are pushed
+when the values are obtaind and
+poped into two registers just before the operation is performed.
+No full-scale register allocation algorithm is used.
+- Frame size is fixed.
+- The registers used for a stack pointer or a frame pointer
+are designated in the source code of the compiler.
+When you want to change the settings, you should also 
+change the assignments defined in the KUE-CHIP2-S simulator program.
+
 
 ### Example
     $ cat sample.eopl
@@ -136,3 +160,4 @@ Type `make` to build `rep_loop` and  `gen`. They are an interpreter and a compil
 The interpreter and the compiler is written in OCaml.
 
 The simulator of KUE-CHIP2-S is written in Perl.
+
