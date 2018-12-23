@@ -1,0 +1,39 @@
+test/add.eopl
+eopl> 9: int
+eopl> 
+test/add2.eopl
+eopl> 2: int
+eopl> 
+test/even.eopl
+eopl> false: bool
+eopl> 
+test/if.eopl
+eopl> false: bool
+eopl> 
+test/let.eopl
+eopl> 25: int
+eopl> 
+test/let2.eopl
+eopl> 9: int
+eopl> 
+test/proc.eopl
+eopl> 7: int
+eopl> 
+test/proc1.eopl
+eopl> 17: int
+eopl> 
+test/proc2.eopl
+eopl> 16: int
+eopl> 
+test/proc3.eopl
+eopl> 8: int
+eopl> 
+test/proc4.eopl
+eopl> 7: int
+eopl> 
+test/proc5.eopl
+eopl> 18: int
+eopl> 
+test/val.eopl
+eopl> 52: int
+eopl> 

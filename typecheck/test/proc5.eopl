@@ -1,0 +1,8 @@
+let f = proc (int x)
+        let a = x
+        in let g = proc (int x)
+                   +(a, x)
+           in g
+in let g = (f 3)
+    in let h = (f 4)
+       in +((g 5), (h 6))

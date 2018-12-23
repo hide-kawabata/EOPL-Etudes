@@ -1,0 +1,10 @@
+let p = 1
+    q = 2
+    r = 3
+    f = proc (int x, int y) 
+        let a = 3
+            b = 4
+            f = proc (int x, int y)
+                -(x,y)
+        in +(+(x, y), (f a b))
+in (f 5 4)

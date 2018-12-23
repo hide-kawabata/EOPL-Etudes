@@ -1,0 +1,25 @@
+eopl_lexer.mll: EOPL Lexer definiton
+eopl_parser.mly: EOPL Parser definition
+syntax.ml: EOPL Abstract Syntax Tree Definition
+mylist.ml: Helper functions
+
+frontend.ml: EOPL Interpreter frontend
+eopl.ml: EOPL Interpreter
+
+inst.ml: KUE-CHIP2-S Instruction Definition
+codegen.ml: EOPL Compiler for KUE-CHIP2-S
+gen_frontend.ml: EOPL Compiler frontend for KUE-CHIP2-S 
+
+vm.pl: KUE-CHIP2-S Simulator (Interpreter of KUE-CHIP2-S Asm)
+
+
+Sample programs:
+./sample/
+./test/
+
+See also:
+rep_test.sh
+gen_sample.sh
+gen_test.sh
+vm_sample.sh
+vm_test.sh
