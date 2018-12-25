@@ -6,5 +6,5 @@ let p = 1
             b = 4
             f = proc (int x, int y)
                 -(x,y)
-        in +(+(x, y), (f a b))
-in (f 5 4)
+        in +(-(x, y), (f a b))
+in (f 7 4)
