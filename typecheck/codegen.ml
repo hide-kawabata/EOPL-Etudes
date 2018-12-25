@@ -1,3 +1,8 @@
+(*
+  EOPL Compiler for KUE-CHIP2-S
+  Copyright (C) 2018 Hideyuki Kawabata
+ *)
+
 open Syntax
 open Mylist
 open Inst
@@ -217,7 +222,10 @@ let rec count_offset env = match env with
   | EmptyEnvRecord -> 0
   | FunctionBorder (_, vals, old_env) -> 
      begin match vals with
+(*
      | (Val h::t) -> h (* no recursion *)
+ *)
+     | (Val h::t) -> 0 (* no recursion *)
      | _ -> raise (Error "count_offset")
      end
   | ExtendedEnvRecord (_, vals, old_env) -> 
@@ -239,7 +247,10 @@ let rec apply_env env sym = match env with
       let pos = list_find_position sym syms
       in if pos >= 0 then
            let n = match (list_ref vals pos) with
+(*
              | Val v -> v
+ *)
+             | Val v -> -(v+1)
              | _ -> raise (Error "(apply_env)")
            in n (* no recursion *)
 	 else
@@ -361,6 +372,7 @@ let rec load_locals ids env =
                          @ code)
      in iter ids' env []    
 
+(*
 let rec load_args ids env =
   let ids' = List.rev ids
   in let rec iter ids env code = match ids with
@@ -375,6 +387,7 @@ let rec load_args ids env =
                            "store " ^ h ^ " into callee's frame")]
                          @ code)
      in iter ids' env []    
+ *)
 
 let rec gen_iter_pop n (R d) =
   if n = 0 then []
@@ -413,11 +426,13 @@ and gen_args_rec proc_names idss bodies env =
                      (Push (frame_ptr), "");
                      (Comment "Adjust FP and SP", "");
                      (Ld (RR (frame_ptr, stack_ptr)), "modify FP");
+                     (Sub (RImm (stack_ptr, N frame_size)), "adjust SP")]
+(*
                      (Sub (RImm (stack_ptr, N frame_size)), "adjust SP");
                      (Comment "Store arguments",
                       "Number of args : " ^ string_of_int (List.length ids))]
                     @ load_args ids env'
-                    
+ *)                    
                     @ [(Comment "Recursive function names", "")]
                     @ (List.flatten (List.map (fun str -> [(Ld (RImm2 (R tm, L str)), "");
                                                            (Push (R tm), "")])
@@ -447,9 +462,12 @@ and gen_expression exp env (R dst) = (* ast -> env -> reg_t -> (op_t list, op_t 
   | Litexp i -> ([(Ld (RImm (R dst, N i)), "literal " ^ string_of_int i)], [])
   | Varexp id ->
      let addr = apply_env env id
-     in if addr < 0 then
+     in
+(*
+     if addr < 0 then
           ([(Ld (RImm2 (R dst, L id)), "recursive func")], [])
         else 
+ *)
           ([(Ld (RDis (R dst, frame_ptr, L ((string_of_int (-addr))))), "variable " ^ id)], [])
   | Primapp (prim, args) ->
      let (code_for_args, auxs) = gen_args args env (* list of (code * addr) *)
@@ -497,10 +515,13 @@ and gen_expression exp env (R dst) = (* ast -> env -> reg_t -> (op_t list, op_t 
                  (Push (frame_ptr), "");
                  (Comment "Adjust FP and SP", "");
                  (Ld (RR (frame_ptr, stack_ptr)), "modify FP");
+                 (Sub (RImm (stack_ptr, N frame_size)), "adjust SP")]
+(*
                  (Sub (RImm (stack_ptr, N frame_size)), "adjust SP");
                  (Comment "Store arguments",
                   "Number of args : " ^ string_of_int (List.length ids))]
                 @ load_args ids env'
+ *)
                 @ [(Comment "Function body", "")]
                 @ code0
                 @ [(Comment "Restore FP and SP", "");
