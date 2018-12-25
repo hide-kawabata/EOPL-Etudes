@@ -288,14 +288,20 @@ let gen_primitive rator (R dst) =
   let tm = get_reg () in
   let code =
     match rator with
-    | Syntax.Add -> [(Pop (R tm), ""); (Pop (R dst), ""); (Add (RR (R dst, R tm)), "")]
-    | Syntax.Sub -> [(Pop (R tm), ""); (Pop (R dst), ""); (Sub (RR (R dst, R tm)), "")]
+    | Syntax.Add -> 
+       [(Pop (R tm), ""); (Pop (R dst), ""); (Add (RR (R dst, R tm)), "prim add")]
+    | Syntax.Sub ->
+       [(Pop (R tm), ""); (Pop (R dst), ""); (Sub (RR (R dst, R tm)), "prim sub")]
     | Syntax.Mul -> [(Nop, "")]
-    | Syntax.Inc -> [(Pop (R dst), ""); (Add (RImm (R dst, N 1)), "")]
-    | Syntax.Dec -> [(Pop (R dst), ""); (Sub (RImm (R dst, N 1)), "")]
-    | Syntax.And -> [(Pop (R tm), ""); (Pop (R dst), ""); (And (RR (R dst, R tm)), "")]
-    | Syntax.Or -> [(Pop (R tm), ""); (Pop (R dst), ""); (Or (RR (R dst, R tm)), "")]
-    | Syntax.Not -> [(Pop (R dst), ""); (Not (R dst), "")]
+    | Syntax.Inc -> [(Pop (R dst), ""); 
+                     (Add (RImm (R dst, N 1)), "prim inc")]
+    | Syntax.Dec -> [(Pop (R dst), ""); 
+                     (Sub (RImm (R dst, N 1)), "prim dec")]
+    | Syntax.And -> 
+       [(Pop (R tm), ""); (Pop (R dst), ""); (And (RR (R dst, R tm)), "prim and")]
+    | Syntax.Or ->
+       [(Pop (R tm), ""); (Pop (R dst), ""); (Or (RR (R dst, R tm)), "prim or")]
+    | Syntax.Not -> [(Pop (R dst), ""); (Not (R dst), "prim not")]
     | Syntax.Gt -> let lab1 = "LA" ^ get_label_count_str ()
                    and lab2 = "LB" ^ get_label_count_str ()
                    in [(Pop (R tm), "");
@@ -306,7 +312,7 @@ let gen_primitive rator (R dst) =
                        (Ba (L lab2), "");
                        (Label (L lab1), "");
                        (Ld (RImm (R dst, N 1)), "");
-                       (Label (L lab2), "")]
+                       (Label (L lab2), "prim gt")]
     | Syntax.Ge -> let lab1 = "LA" ^ get_label_count_str ()
                    and lab2 = "LB" ^ get_label_count_str ()
                    in [(Pop (R tm), "");
@@ -317,7 +323,7 @@ let gen_primitive rator (R dst) =
                        (Ba (L lab2), "");
                        (Label (L lab1), "");
                        (Ld (RImm (R dst, N 1)), "");
-                       (Label (L lab2), "")]
+                       (Label (L lab2), "prim ge")]
     | Syntax.Lt -> let lab1 = "LA" ^ get_label_count_str ()
                    and lab2 = "LB" ^ get_label_count_str ()
                    in [(Pop (R tm), "");
@@ -328,7 +334,7 @@ let gen_primitive rator (R dst) =
                        (Ba (L lab2), "");
                        (Label (L lab1), "");
                        (Ld (RImm (R dst, N 1)), "");
-                       (Label (L lab2), "")]
+                       (Label (L lab2), "prim lt")]
     | Syntax.Le -> let lab1 = "LA" ^ get_label_count_str ()
                    and lab2 = "LB" ^ get_label_count_str ()
                    in [(Pop (R tm), "");
@@ -339,7 +345,7 @@ let gen_primitive rator (R dst) =
                        (Ba (L lab2), "");
                        (Label (L lab1), "");
                        (Ld (RImm (R dst, N 1)), "");
-                       (Label (L lab2), "")]
+                       (Label (L lab2), "prim le")]
     | Syntax.Equal -> let lab1 = "LA" ^ get_label_count_str ()
                       and lab2 = "LB" ^ get_label_count_str ()
                       in [(Pop (R tm), "");
@@ -350,10 +356,10 @@ let gen_primitive rator (R dst) =
                           (Ba (L lab2), "");
                           (Label (L lab1), "");
                           (Ld (RImm (R dst, N 1)), "");
-                          (Label (L lab2), "")]
+                          (Label (L lab2), "prim equal")]
     | Syntax.Output -> [(Pop (R tm), "");
-                        (Out (R tm), "");
-                        (Ld (RImm (R dst, N 0)), "")]
+                        (Out (R tm), "output to somewhere");
+                        (Ld (RImm (R dst, N 0)), "prim output")]
     | _ -> raise (Error "(gen_primitive)")
   in let _ = free_reg tm
      in code
@@ -690,7 +696,7 @@ let rec print_code = function
 
 
 let gen_program = function
-    Program body -> let (code, aux) = gen_expression body (init_env ()) (R 0)
+    Program body -> let (code, aux) = gen_expression body (init_env ()) (reg_ret_value)
                     in let code' = [(Label (L "start"), "");
                                     (Comment "Initialize Frame Pointer", "");
                                     (Ld (RImm (frame_ptr, N stack_ptr_init)), "");
