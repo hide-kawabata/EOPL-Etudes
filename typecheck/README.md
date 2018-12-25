@@ -101,59 +101,56 @@ change the assignments defined in the KUE-CHIP2-S simulator program.
 
 
 ### Example
-    $ cat sample.eopl
-    output ((proc (int x, int y) +(x, y) 3 4))
-    $ ./gen < sample.eopl > sample.asm
-    $ cat sample.asm
-    start:
-    * Initialize Frame Pointer
-            LD      R31,    65535
-    * Initialize Stack Pointer
-            LD      R30,    R31
-            SUB     R30,    32
-    main:
-    * Evaluate operator
-            LD      R27,    func0
-    * Prepare arguments
-            LD      R26,    3       ! literal 3
-            PUSH    R26
-            LD      R26,    4       ! literal 4
-            PUSH    R26
-            CALLR   R27
-    * Obtain returned value
-            LD      R28,    R29     ! returned value
-            POP     R27     ! cleanup
-            POP     R27     ! cleanup
-            PUSH    R28
-            POP     R28
-            OUT     R28
-            LD      R0,     0
-            HLT
-    func0:
-    * Save FP
-            PUSH    R31
-    * Adjust FP and SP
-            LD      R31,    R30     ! modify FP
-            SUB     R30,    32      ! adjust SP
-    * Store arguments       ! Number of args : 2
-            LD      R26,    [R31+3]         ! load x from caller's frame
-            ST      R26,    [R31+-2]        ! store x into callee's frame
-            LD      R26,    [R31+2]         ! load y from caller's frame
-            ST      R26,    [R31+-1]        ! store y into callee's frame
-    * Function body
-            LD      R26,    [R31+-2]        ! variable x
-            PUSH    R26
-            LD      R26,    [R31+-1]        ! variable y
-            PUSH    R26
-            POP     R26
-            POP     R29
-            ADD     R29,    R26
-    * Restore FP and SP
-            LD      R30,    R31
-            POP     R31
-            RET
-            END
-    $
+```
+$ cat sample.eopl
+output ((proc (int x, int y) +(x, y) 3 4))
+$ ./gen < sample.eopl > sample.asm
+$ cat sample.asm
+start:
+* Initialize Frame Pointer
+        LD      R31,    65535
+* Initialize Stack Pointer
+        LD      R30,    R31
+        SUB     R30,    32
+main:
+* Evaluate operator
+        LD      R27,    func0
+* Prepare arguments
+        LD      R26,    3       ! literal 3
+        PUSH    R26
+        LD      R26,    4       ! literal 4
+        PUSH    R26
+        CALLR   R27
+* Obtain returned value
+        LD      R28,    R29     ! returned value
+        POP     R27     ! cleanup
+        POP     R27     ! cleanup
+        PUSH    R28
+        POP     R28
+        OUT     R28
+        LD      R29,     0
+        HLT
+func0:
+* Save FP
+        PUSH    R31
+* Adjust FP and SP
+        LD      R31,    R30     ! modify FP
+        SUB     R30,    32      ! adjust SP
+* Function body
+        LD      R26,    [R31+3]         ! variable x
+        PUSH    R26
+        LD      R26,    [R31+2]         ! variable y
+        PUSH    R26
+        POP     R26
+        POP     R29
+        ADD     R29,    R26
+* Restore FP and SP
+        LD      R30,    R31
+        POP     R31
+        RET
+        END
+$
+```
 
 ### Implementation
 
