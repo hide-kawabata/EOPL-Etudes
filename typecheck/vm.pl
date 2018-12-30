@@ -26,6 +26,7 @@ while (<>) {
 
 
 $pc = 0;
+$mainaddr = &findaddr("main");
 
 while ($op[$pc] !~ /HLT/) {
 
@@ -257,6 +258,11 @@ while ($op[$pc] !~ /HLT/) {
 	print "(???) <", $op[$pc], ">\n";
 	$pc++;
     }       
+
+    if ($mainaddr <= $pc && $reg{$stack_ptr} <= $reg{$heap_ptr}) {
+	print "Stack Overflow.\n";
+	last;
+    }
 }
 
 sub findaddr {
