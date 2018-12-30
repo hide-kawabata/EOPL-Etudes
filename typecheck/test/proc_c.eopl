@@ -1,0 +1,6 @@
+let f = proc (int x)
+          proc (int y) 
+            -(x, y)
+in let g1 = (f 3)
+in let g2 = (f 4)
+in output(+((g1 5), (g2 5)))

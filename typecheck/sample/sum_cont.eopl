@@ -2,4 +2,4 @@ let rec int sum(int n, (int->int) k) =
   if ==(n, 0) then (k 0)
   else (sum -(n, 1) proc(int a) (k +(n, a)))
 in
-  (sum 100 proc(int x)x)
+  output((sum 100 proc(int x)x))

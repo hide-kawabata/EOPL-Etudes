@@ -1,4 +1,4 @@
-let rec bool even (int n) = if ==(n, 0) then true else (odd -(n,1))
-        bool odd (int n) = if ==(n, 0) then false else (even -(n,1))
+let rec bool even (int n) = if ==(n, 0) then output(111) else (odd -(n,1))
+        bool odd (int n) = if ==(n, 0) then output(222) else (even -(n,1))
 in (even 25)
 

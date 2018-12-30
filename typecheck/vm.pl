@@ -5,6 +5,7 @@
 
 $stack_ptr = "R30";
 $frame_ptr = "R31";
+$heap_ptr = "R28";
 
 $count = 0;
 
@@ -32,7 +33,7 @@ while ($op[$pc] !~ /HLT/) {
     $pat2 = qr/^\[(R[0-9]*|ACC|IX)\]$/; # [R0]
     $pat3 = qr/^(R[0-9]*|ACC|IX)$/; # R0
     $pat4 = qr/^(-?[0-9][0-9A-Fa-f]*[Hh]?)$/; # 32
-    $pat5 = qr/^([A-Za-z][A-Za-z0-9]*)$/; # label
+    $pat5 = qr/^([_A-Za-z][_A-Za-z0-9]*)$/; # label
 
     if ($op[$pc] =~ /LD/) {
 	if ($opr2[$pc] =~ $pat1) { # [R0+-3]
@@ -265,7 +266,7 @@ sub findaddr {
     for ($i = 0; $i < $count; $i++) {
 	if ($label[$i] =~ /$arg/) {
 	    if ($op[$i] =~ /EQU/) {
-		if ($opr1[$i] =~ /^[A-Za-z][A-Za-z0-9]+$/) { # label
+		if ($opr1[$i] =~ /^[_A-Za-z][_A-Za-z0-9]+$/) { # label
 		    $r = &findaddr($opr1[$i]);
 		} else { # (must be a) number
 		    $r = &num2decimal($opr1[$i]);

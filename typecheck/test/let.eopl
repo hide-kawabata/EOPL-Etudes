@@ -1,1 +1,1 @@
-let x = 25 in x
+let x = 25 in output(x)

@@ -1,13 +1,3 @@
-(*
-type op_t = Nop | Hlt |
-          Ba | Bnz | Bz | Bn |
-          Sra | Sla |
-          Ld | St |
-          Add | Sub | Mul | Div |
-          Cmp |
-          And | Or | Not |
-          Call | Ret
- *)
 type reg_t = R of int
 type num_t = N of int
 type lab_t = L of string

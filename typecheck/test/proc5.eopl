@@ -1,8 +1,9 @@
 let f = proc (int x)
         let a = x
+	    b = +(x,1)
         in let g = proc (int x)
-                   +(a, x)
+                   -(+(a, x), b)
            in g
 in let g = (f 3)
     in let h = (f 4)
-       in +((g 5), (h 6))
+       in output(+((g 5), (h 6)))

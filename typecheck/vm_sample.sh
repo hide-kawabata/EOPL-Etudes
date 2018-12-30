@@ -6,5 +6,5 @@ echo sample/proc.asm
 ./vm.pl < sample/proc.asm
 echo sample/sum.asm
 ./vm.pl < sample/sum.asm
-#echo sample/sum_cont.asm
-#./vm.pl < sample/sum_cont.asm
+echo sample/sum_cont.asm
+./vm.pl < sample/sum_cont.asm

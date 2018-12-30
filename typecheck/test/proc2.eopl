@@ -2,4 +2,4 @@ let f = proc (int x, int y)
   let a = 3
       b = 5
   in +(-(x, y), -(a,b))
-in (f 5 2)
+in output((f 5 2))

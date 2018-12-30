@@ -1,0 +1,5 @@
+let f = proc(int x, int y)
+        proc(int z, int w) +(-(x, z), -(y, w))
+in
+  output(+(((f 10 9) 8 7), ((f 20 10) 5 2)))
+  

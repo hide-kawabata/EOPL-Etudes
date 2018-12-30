@@ -20,7 +20,7 @@ echo test/proc3.asm
 ./vm.pl < test/proc3.asm
 echo test/proc4.asm
 ./vm.pl < test/proc4.asm
-#echo test/proc5.asm
-#./vm.pl < test/proc5.asm
+echo test/proc5.asm
+./vm.pl < test/proc5.asm
 echo test/val.asm
 ./vm.pl < test/val.asm

@@ -1,10 +1,11 @@
 let p = 1
     q = 2
     r = 3
-    f = proc (int x, int y) 
+    g = proc (int x, int y) 
         let a = 3
             b = 4
             f = proc (int x, int y)
                 -(x,y)
         in +(-(x, y), (f a b))
-in (f 7 4)
+in let f = g
+   in output((f 7 4))

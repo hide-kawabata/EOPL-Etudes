@@ -1,1 +1,1 @@
-let f = proc (int x, int y)  - (x, y) in (f 3 4)
+let f = proc (int x, int y)  - (x, y) in output((f 3 4))
