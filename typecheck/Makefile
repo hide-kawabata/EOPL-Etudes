@@ -31,6 +31,12 @@ eopl_parser2.cmi: eopl_parser2.mli syntax2.cmi
 eopl_parser.cmi: eopl_parser.mli syntax.cmi
 	ocamlc -c eopl_parser.mli
 
+gen2_frontend.cmo: gen2_frontend.ml codegen2.cmo
+	ocamlc -c $<
+
+gen_frontend.cmo: gen_frontend.ml codegen.cmo
+	ocamlc -c $<
+
 codegen2.cmo: codegen2.ml mylist.cmo inst.cmo
 	ocamlc -c codegen2.ml mylist.cmo inst.cmo
 
