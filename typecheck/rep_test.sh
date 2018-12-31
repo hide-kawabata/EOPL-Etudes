@@ -24,3 +24,5 @@ echo test/proc5.eopl
 ./rep_loop < test/proc5.eopl
 echo test/val.eopl
 ./rep_loop < test/val.eopl
+echo test/tail.eopl
+./rep_loop < test/tail.eopl

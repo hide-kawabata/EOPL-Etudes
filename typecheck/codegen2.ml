@@ -439,80 +439,82 @@ let rec load_locals ids env =
                          @ code)
      in iter ids' env []    
 
-let rec gen_iter_pop n (R d) =
-  if n = 0 then []
-  else (Pop (R d), "cleanup") :: gen_iter_pop (n-1) (R d)
-
-
+let gen_call_seq n (R d) =
+  let rec gen_iter_pop n (R d) =
+    if n = 0 then []
+    else (Pop (R d), "cleanup") :: gen_iter_pop (n-1) (R d)
+  in (CallR (R d), "") :: gen_iter_pop n (R d)
 
 (* list of ASTs --> (code, aux) *)
 let rec gen_args args env =
   List.fold_left (fun (l1, l2) arg ->
       let tm = get_reg () 
-      in let (code, aux) = gen_expression arg env (R tm)
+      in let (code, aux) = gen_expression arg env (R tm) "_norecname_"
          in let _ = free_reg tm
             in (l1 @ ([code @ [(Push (R tm), "")]]), l2 @ [aux]))
     ([],[]) args
 
-and procexp_gen_pair func_name ids body globals (R dst) env =
-  let env'' = extend_env_globals globals env
-     in let env' = extend_env_func ids env''
-     in let (code0, aux0) = gen_expression body env' (reg_ret_value)
-     in let code_aux = 
-          [(Label (L func_name), "");
-           (Comment "Save FP", "");
-           (Push (frame_ptr), "");
-           (Comment "Adjust FP and SP", "");
-           (Ld (RR (frame_ptr, stack_ptr)), "modify FP");
-           (Sub (RImm (stack_ptr, N frame_size)), "adjust SP")]
+and gen_prelude func_name =
+  [(Label (L func_name), "");
+   (Comment "Save FP", "");
+   (Push (frame_ptr), "");
+   (Comment "Adjust FP and SP", "");
+   (Ld (RR (frame_ptr, stack_ptr)), "modify FP");
+   (Sub (RImm (stack_ptr, N frame_size)), "adjust SP")]
+
+and gen_postlude = 
+  [(Comment "Restore FP and SP", "");
+   (Ld (RR (stack_ptr, frame_ptr)), "");
+   (Pop (frame_ptr), ""); (* restore SP *)
+   (Ret, "")]
+
+and procexp_gen_pair func_name ids body globals (R dst) env recname =
+  let env' = extend_env_func ids (extend_env_globals globals env)
+  in let (code0, code_aux0) = gen_expression body env' (reg_ret_value) recname
+     in let code_aux =
+          code_aux0 
+          @ gen_prelude func_name
           @ [(Comment "Global variables", "")]
           @ (List.map (fun name -> (Comment name, "global")) globals)
           @ [(Comment "Function body", "")]
+          @ [(Label (L (recname ^ "_entry")), "")]
           @ code0
-          @ [(Comment "Restore FP and SP", "");
-             (Ld (RR (stack_ptr, frame_ptr)), "");
-             (Pop (frame_ptr), ""); (* restore SP *)
-             (Ret, "")]
-     in let code = 
+          @ gen_postlude
+      in let code = (* generate a closure *)
           let r0 = get_reg ()
           in let c0 = [(Comment "Proc", "");
                        (Ld (RImm2 (R r0, L "heap_alloc")), "")]
           in let r1 = get_reg ()
           in let c1 = [(Ld (RImm (R r1, N (List.length globals + 2))), "size");
                        (Push (R r1), "")]
-          in let c2 = [(CallR (R r0), "");
-                       (Pop (R r0), "cleanup");
-                       (Ld (RImm2 (R r0, L func_name)), "");
-                       (St (RDis (R r0, reg_ret_value, L "0")), "store func ptr")]
+          in let c2 = gen_call_seq 1 (R r0)
+                      @ [(Ld (RImm2 (R r0, L func_name)), "");
+                         (St (RDis (R r0, reg_ret_value, L "0")), "store func ptr")]
           in let r2 = get_reg ()
           in let c3 = 
-               if List.length globals <= 0 then
+               if List.length globals <= 0 then (* no global references *)
                  [(Ld (RImm (R r0, N 0)), "null");
                   (St (RDis (R r0, reg_ret_value, L "1")), "store env ptr")]
-               else 
+               else (* global references *)
                  [(Ld (RR (R r2, reg_ret_value)), "");
                   (Add (RImm (R r2, N 2)), "");
                   (St (RDis (R r2, reg_ret_value, L "1")), "store env ptr")]
-                 @
-                   List.flatten
+                 @ List.flatten
                      (List.map2
-                        (fun name n ->
-                          let (c', _) = gen_expression (Varexp_A name)
-                                          env (* oldenv *)
-                                          (R r1)
+                        (fun name n -> (* oldenv *)
+                          let (c', _) = gen_expression (Varexp_A name) env (R r1) "_norecname_"
                           in let c'' = 
                                c' @ [(St (RDis (R r1, R r2, L (string_of_int n))), 
                                       "env entry")]
                              in c'') 
                         globals 
                         (makeseq (List.length globals)))
-
           in let _ = free_reg r1
           in let _ = free_reg r2
-          in let c3' = c3 @ [(Ld (RR (R dst, reg_ret_value)), "closure ptr")]
+          in let c4 = [(Ld (RR (R dst, reg_ret_value)), "closure ptr")]
           in let _ = free_reg r0
-          in c0 @ c1 @ c2 @ c3'
-        in (code, aux0 @ code_aux)
+          in c0 @ c1 @ c2 @ c3 @ c4
+        in (code, code_aux)
 
 and gen_args_rec proc_names idss bodies env globalss =
   let rec make_func_names proc_names0 acc = match proc_names0 with
@@ -520,24 +522,25 @@ and gen_args_rec proc_names idss bodies env globalss =
     | (h::t) -> make_func_names t (acc @ [h ^ (string_of_int (get_func_count ()))])
   in let func_names = make_func_names proc_names []
      in
-     let rec iter func_names0 idss bodies env globalss (l1, l2) = 
-       begin match (func_names0, idss, bodies, globalss) with
-       | ([], [], [], []) -> (l1, l2)
-       | (func_name::func_names', ids::idss', body::bodies', globals::globalss') ->
+     let rec iter func_names0 proc_names0 idss bodies env globalss (l1, l2) = 
+       begin match (func_names0, proc_names0, idss, bodies, globalss) with
+       | ([], [], [], [], []) -> (l1, l2)
+       | (func_name::func_names', proc_name::proc_names',
+          ids::idss', body::bodies', globals::globalss') ->
           let tm = get_reg () in
           let (code, aux) = (* almost the same as the Procexp part *)
-            procexp_gen_pair func_name ids body globals (R tm) env
+            procexp_gen_pair func_name ids body globals (R tm) env proc_name
           in 
           let pair = 
-            iter func_names' idss' bodies' env globalss'
+            iter func_names' proc_names' idss' bodies' env globalss'
               (l1 @ [code @ [(Push (R tm), "")]], l2 @ [aux])
           in let _ = free_reg tm
              in pair
        | _ -> raise (Error "(gen_args_rec)")
        end
-     in iter func_names idss bodies env globalss ([], [])
+     in iter func_names proc_names idss bodies env globalss ([], [])
 
-and gen_expression exp env (R dst) = (* ast -> env -> reg_t -> (op_t list, op_t list) *)
+and gen_expression exp env (R dst) recname = (* (op_t list, op_t list) *)
   match exp with
   | Trueexp_A -> ([(Ld (RImm (R dst, N 1)), "constant True")], [])
   | Falseexp_A -> ([(Ld (RImm (R dst, N 0)), "constant False")], [])
@@ -559,7 +562,9 @@ and gen_expression exp env (R dst) = (* ast -> env -> reg_t -> (op_t list, op_t 
   | Letexp_A (ids, rands, body) ->
      let (code_for_args, auxs) = gen_args rands env (* (code, aux) *)
      and env' = extend_env ids env
-     in let (code0, aux0) = gen_expression body env' (R dst)
+     in let name' = if List.exists (fun s -> s = recname) ids
+                    then "_norecname_" else recname
+     in let (code0, aux0) = gen_expression body env' (R dst) name'
         in let code = [(Comment "LET expression", "")] 
                       @ (List.flatten (List.rev code_for_args))
                       @ [(Comment "Store locals", 
@@ -570,10 +575,10 @@ and gen_expression exp env (R dst) = (* ast -> env -> reg_t -> (op_t list, op_t 
            in (code, aux0 @ List.flatten auxs)
   | Ifexp_A (testexp, trueexp, falseexp) ->
      let tm = get_reg ()
-     in let (testinst, testaux) = gen_expression testexp env (R tm)
+     in let (testinst, testaux) = gen_expression testexp env (R tm) "_norecname_"
         in let _ = free_reg tm
-           in let (trueinst, trueaux) = gen_expression trueexp env (R dst) 
-              in let (falseinst, falseaux) = gen_expression falseexp env (R dst) 
+           in let (trueinst, trueaux) = gen_expression trueexp env (R dst) recname
+              in let (falseinst, falseaux) = gen_expression falseexp env (R dst) recname
                  in let label_f = "LF" ^ get_label_count_str ()
                     and label_e = "LE" ^ get_label_count_str ()
                     in ([(Comment "IF expression", "")]
@@ -589,40 +594,60 @@ and gen_expression exp env (R dst) = (* ast -> env -> reg_t -> (op_t list, op_t 
                         @ [(Label (L label_e), "")],
                         testaux @ trueaux @ falseaux)
   | Procexp_A (texps, ids, body, globals) ->
-     let func_name = "func"^(string_of_int (get_func_count ()))
-     in procexp_gen_pair func_name ids body globals (R dst) env
+     let func_name = "func" ^ (string_of_int (get_func_count ()))
+     in procexp_gen_pair func_name ids body globals (R dst) env recname
 
   | Appexp_A (rator, rands) ->
-     let tm = get_reg () 
-     in let (proc, aux) = gen_expression rator env (R tm)
-        and iter_pop = gen_iter_pop ((List.length rands) + 1) (R tm)
-        in let code = [(Comment "Evaluate operator", "")]
-                      @ proc            
-           in let r2 = get_reg ()
-              in let code2 = [(Ld (RDis (R r2, R tm, L "1")), "envptr")]
 
-                      @ [(Comment "Prepare arguments", "")]
-                 in let (code_for_args, auxs) = gen_args rands env (* list of code *)
-                    in let code2' = 
-                       List.flatten code_for_args
+        (* If this call is a tailcall, 
+           - store values of operands into arguments
+           - use BA instead of CALLR
+         *)
+                 
+     let (code0, flag) =
+(*
+       match rator with
+       | Varexp_A id -> if id = recname then
+                          ([(Comment ("TAILCALL: " ^ id), recname)], true)
+                        else 
+                          ([(Comment ("no tailcall: " ^ id), recname)], false)
+       | _ -> ([], false)
+ *)
+         ([], false)
 
-                      @ [(Push (R r2), "envptr as arg")]
-                      @ [(Ld (RDis (R tm, R tm, L "0")), "addr")]
+     in let tm = get_reg () 
+     in let (proc, aux) = gen_expression rator env (R tm) recname
+     in let code = if flag then
+                     []
+                   else
+                     ((Comment "Evaluate operator", "") :: proc)
+     in let r2 = get_reg ()
+     in let code2 = (if flag then
+                       []
+                     else
+                       [(Ld (RDis (R r2, R tm, L "1")), "envptr")])
+                    @ [(Comment "Prepare arguments", "")]
+     in let (code_for_args, auxs) = gen_args rands env (* list of code *)
+     in let code2' = List.flatten code_for_args
+                     @ if flag then [] else [(Push (R r2), "envptr as arg")]
+                     @ [(Ld (RDis (R tm, R tm, L "0")), "addr")]
+     in let _ = free_reg r2
+     in let code3 = 
+          if flag then
+            [(Ba (L (recname ^ "_entry")), "tail call")]
+          else
+            gen_call_seq ((List.length rands) + 1) (R tm)
+            @ [(Comment "Obtain returned value", "");
+               (Ld (RR (R dst, reg_ret_value)), "returned value")]
+     in let _ = free_reg tm
+        in (code0 @ code @ code2 @ code2' @ code3, aux @ List.flatten auxs)
 
-                in let _ = free_reg r2
-                   in let code3 = 
 
-                       [(CallR (R tm), "");
-                         (Comment "Obtain returned value", "");
-                         (Ld (RR (R dst, reg_ret_value)), "returned value")]
-                      @ iter_pop
-           in let _ = free_reg tm
-           in (code @ code2 @ code2' @ code3, aux @ List.flatten auxs)
 
   | Letrecexp_A (res_texps, proc_names, arg_texpss, idss, bodies, letrec_body, globalss) ->
      let env' = extend_env proc_names env (* register proc_names *)
      in let (code_for_args, auxs) = gen_args_rec proc_names idss bodies env' globalss
-     in let (code0, aux0) = gen_expression letrec_body env' (R dst)
+     in let (code0, aux0) = gen_expression letrec_body env' (R dst) recname
      in let code = [(Comment "LETREC expression", "")]
                    @ (List.flatten (List.rev code_for_args))
                    @ [(Comment "Store rec funcs",
@@ -764,34 +789,26 @@ let rec print_code = function
   | _ -> Printf.printf "Too long.\n"
 
 
-let gen_program = function
-    Program_A body -> let (code, aux) = gen_expression body (init_env ()) (reg_ret_value)
-                    in let code' = [(Label (L "start"), "");
-                                    (Comment "Initialize Heap Pointer", "");
-                                    (Ld (RImm (heap_ptr, N heap_ptr_init)), "");
-                                    (Comment "Initialize Frame Pointer", "");
-                                    (Ld (RImm (frame_ptr, N stack_ptr_init)), "");
-                                    (Comment "Initialize Stack Pointer", "");
-                                    (Ld (RR (stack_ptr, frame_ptr)), "");
-                                    (Sub (RImm (stack_ptr, N frame_size)), "");
-                                    (Label (L "main"), "")]
-                                   @ code
-                                   @ [(Hlt, "")]
-                                   @ aux
-                                   @ [(Label (L "heap_alloc"), "");
-                                      (Comment "Save FP", "");
-                                      (Push (frame_ptr), "");
-                                      (Comment "Adjust FP and SP", "");
-                                      (Ld (RR (frame_ptr, stack_ptr)), "modify FP");
-                                      (Sub (RImm (stack_ptr, N frame_size)), "adjust SP");
-                                      (Ld (RR (reg_ret_value, heap_ptr)), "returned ptr");
-                                      (Add (RDis (heap_ptr, frame_ptr, L "2")), "size");
-                                      (Comment "Restore FP and SP", "");
-                                      (Ld (RR (stack_ptr, frame_ptr)), "");
-                                      (Pop (frame_ptr), ""); (* restore SP *)
-                                      (Ret, "")]
-                                   @ [(End, "")]
-                       in print_code code'; 0
+let gen_program (Program_A body) =
+  let (code, aux) = gen_expression body (init_env ()) (reg_ret_value) "_norecname_"
+  in let code' = [(Label (L "start"), "");
+                  (Comment "Initialize Heap Pointer", "");
+                  (Ld (RImm (heap_ptr, N heap_ptr_init)), "");
+                  (Comment "Initialize Frame Pointer", "");
+                  (Ld (RImm (frame_ptr, N stack_ptr_init)), "");
+                  (Comment "Initialize Stack Pointer", "");
+                  (Ld (RR (stack_ptr, frame_ptr)), "");
+                  (Sub (RImm (stack_ptr, N frame_size)), "");
+                  (Label (L "main"), "")]
+                 @ code
+                 @ [(Hlt, "")]
+                 @ aux
+                 @ gen_prelude "heap_alloc"
+                 @ [(Ld (RR (reg_ret_value, heap_ptr)), "returned ptr");
+                    (Add (RDis (heap_ptr, frame_ptr, L "2")), "size")]
+                 @ gen_postlude
+                 @ [(End, "")]
+     in print_code code'; 0
 
 let gen_from_string str =
   let parsed =  (Eopl_parser2.program Eopl_lexer2.token (Lexing.from_string str))

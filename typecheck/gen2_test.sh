@@ -25,3 +25,5 @@ echo test/proc5.eopl
 ${GEN} < test/proc5.eopl > test/proc5.asm
 echo test/val.eopl
 ${GEN} < test/val.eopl > test/val.asm
+echo test/tail.eopl
+${GEN} < test/tail.eopl > test/tail.asm

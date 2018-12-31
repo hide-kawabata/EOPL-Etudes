@@ -24,3 +24,5 @@ echo test/proc5.asm
 ./vm.pl < test/proc5.asm
 echo test/val.asm
 ./vm.pl < test/val.asm
+echo test/tail.asm
+./vm.pl < test/tail.asm
