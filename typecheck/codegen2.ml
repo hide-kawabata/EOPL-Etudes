@@ -454,6 +454,18 @@ let rec gen_args args env =
             in (l1 @ ([code @ [(Push (R tm), "")]]), l2 @ [aux]))
     ([],[]) args
 
+(* list of ASTs --> (code, aux) *)
+and gen_args_tail args env =
+  List.fold_left (fun (l1, l2) arg ->
+      let tm = get_reg () 
+      in let (code, aux) = gen_expression arg env (R tm) "_norecname_"
+         in let _ = free_reg tm
+            in (l1 @ ([code @ 
+                         [(Comment ("STORE R" ^ string_of_int tm ^ " to PARAM"), "");
+                          (St (RDis (R tm, frame_ptr, L "5")), "param")]
+                     ]), l2 @ [aux]))
+    ([],[]) args
+
 and gen_prelude func_name =
   [(Label (L func_name), "");
    (Comment "Save FP", "");
@@ -606,15 +618,20 @@ and gen_expression exp env (R dst) recname = (* (op_t list, op_t list) *)
                  
      let (code0, flag) =
 (*
+ *)
        match rator with
        | Varexp_A id -> if id = recname then
-                          ([(Comment ("TAILCALL: " ^ id), recname)], true)
+                          ([(Comment ("tailcall: " ^ id), recname)], true)
                         else 
                           ([(Comment ("no tailcall: " ^ id), recname)], false)
        | _ -> ([], false)
+(*
  *)
+(*
+
          ([], false)
 
+ *)
      in let tm = get_reg () 
      in let (proc, aux) = gen_expression rator env (R tm) recname
      in let code = if flag then
@@ -622,14 +639,28 @@ and gen_expression exp env (R dst) recname = (* (op_t list, op_t list) *)
                    else
                      ((Comment "Evaluate operator", "") :: proc)
      in let r2 = get_reg ()
-     in let code2 = (if flag then
-                       []
-                     else
-                       [(Ld (RDis (R r2, R tm, L "1")), "envptr")])
-                    @ [(Comment "Prepare arguments", "")]
-     in let (code_for_args, auxs) = gen_args rands env (* list of code *)
+     in let code2 = if flag then
+                      [(Comment "Modify arguments", "")]
+                    else
+                      [(Ld (RDis (R r2, R tm, L "1")), "envptr");
+                       (Comment "Prepare arguments", "")]
+     in let (code_for_args, auxs) = 
+(*
+          if flag then gen_args_tail rands env
+          else gen_args rands env (* list of code *)
+ *)
+          gen_args rands env (* list of code *)
      in let code2' = List.flatten code_for_args
-                     @ if flag then [] else [(Push (R r2), "envptr as arg")]
+                     @ (if flag then
+                         List.flatten 
+                           (List.map (fun n -> 
+                                [(Pop (R r2), "");
+                                 (St (RDis (R r2, frame_ptr, L (string_of_int (n+3)))),
+                                  "param")])
+                              (List.rev (makeseq (List.length code_for_args)))
+                           )
+                        else [])
+                     @ (if flag then [] else [(Push (R r2), "envptr as arg")])
                      @ [(Ld (RDis (R tm, R tm, L "0")), "addr")]
      in let _ = free_reg r2
      in let code3 = 

@@ -71,12 +71,11 @@ For example, several parameters such as word size, the number of registers, and 
 The interpreter is implemented as defined in the EOPL Book [1].
 
 The compiler is underconstruction.
-Currently, tail-recursive calls are not transformed into loops.
+There are lots of oppotunities for optimization.
+[//]: # (Currently, tail-recursive calls are not transformed into loops.)
 [//]: # (Currently, we only support combinators, i.e., functions that do not refer to names defined outside their bodies, as first-class values.)
-
-
-No optimization is performed.
-All code is generated directly from bare ASTs.
+[//]: # (Almost no optimization is performed.)
+[//]: # (All code is generated directly from bare ASTs.)
 
 ### How to build
 
