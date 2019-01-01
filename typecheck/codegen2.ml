@@ -232,6 +232,9 @@ let stack_ptr = R 30
 let frame_ptr = R 31
 let heap_ptr_init = 255
 let stack_ptr_init = 65535
+(*
+let stack_ptr_init = 2047
+ *)
 let frame_size = 32
 let reg_ret_value = R 29
 let heap_ptr = R 28
@@ -454,18 +457,6 @@ let rec gen_args args env =
             in (l1 @ ([code @ [(Push (R tm), "")]]), l2 @ [aux]))
     ([],[]) args
 
-(* list of ASTs --> (code, aux) *)
-and gen_args_tail args env =
-  List.fold_left (fun (l1, l2) arg ->
-      let tm = get_reg () 
-      in let (code, aux) = gen_expression arg env (R tm) "_norecname_"
-         in let _ = free_reg tm
-            in (l1 @ ([code @ 
-                         [(Comment ("STORE R" ^ string_of_int tm ^ " to PARAM"), "");
-                          (St (RDis (R tm, frame_ptr, L "5")), "param")]
-                     ]), l2 @ [aux]))
-    ([],[]) args
-
 and gen_prelude func_name =
   [(Label (L func_name), "");
    (Comment "Save FP", "");
@@ -617,61 +608,48 @@ and gen_expression exp env (R dst) recname = (* (op_t list, op_t list) *)
          *)
                  
      let (code0, flag) =
-(*
- *)
-       match rator with
-       | Varexp_A id -> if id = recname then
-                          ([(Comment ("tailcall: " ^ id), recname)], true)
-                        else 
-                          ([(Comment ("no tailcall: " ^ id), recname)], false)
-       | _ -> ([], false)
-(*
- *)
-(*
+       let tailcall_enable = true
+       in match rator with
+          | Varexp_A id -> if tailcall_enable && id = recname then
+                             ([(Comment ("tailcall: " ^ id), recname)], true)
+                           else 
+                             ([(Comment ("no tailcall: " ^ id), recname)], false)
+          | _ -> ([], false)
 
-         ([], false)
-
- *)
      in let tm = get_reg () 
      in let (proc, aux) = gen_expression rator env (R tm) recname
-     in let code = if flag then
-                     []
+     in let c_op = if flag then
+                     [] (* no need for evaluating the operand *)
                    else
                      ((Comment "Evaluate operator", "") :: proc)
      in let r2 = get_reg ()
-     in let code2 = if flag then
-                      [(Comment "Modify arguments", "")]
+     in let c_env = if flag then
+                      [(Comment "Modify arguments", "")] (* no need for updating envptr *)
                     else
                       [(Ld (RDis (R r2, R tm, L "1")), "envptr");
                        (Comment "Prepare arguments", "")]
-     in let (code_for_args, auxs) = 
-(*
-          if flag then gen_args_tail rands env
-          else gen_args rands env (* list of code *)
- *)
-          gen_args rands env (* list of code *)
-     in let code2' = List.flatten code_for_args
-                     @ (if flag then
-                         List.flatten 
-                           (List.map (fun n -> 
-                                [(Pop (R r2), "");
-                                 (St (RDis (R r2, frame_ptr, L (string_of_int (n+3)))),
-                                  "param")])
-                              (List.rev (makeseq (List.length code_for_args)))
-                           )
-                        else [])
-                     @ (if flag then [] else [(Push (R r2), "envptr as arg")])
-                     @ [(Ld (RDis (R tm, R tm, L "0")), "addr")]
+     in let (c_args, auxs) = gen_args rands env (* list of code for args *)
+     in let c_param = if flag then (* update parameters *)
+                        List.flatten 
+                          (List.map (fun n -> 
+                               [(Pop (R r2), "");
+                                (St (RDis (R r2, frame_ptr, L (string_of_int (n+3)))),
+                                 "param")])
+                             (List.rev (makeseq (List.length c_args)))
+                          )
+                      else (* pass envptr as an argument *)
+                        [(Push (R r2), "envptr as arg")]
+     in let c_addr = [(Ld (RDis (R tm, R tm, L "0")), "addr")] (* callee's address *)
      in let _ = free_reg r2
-     in let code3 = 
-          if flag then
-            [(Ba (L (recname ^ "_entry")), "tail call")]
-          else
-            gen_call_seq ((List.length rands) + 1) (R tm)
-            @ [(Comment "Obtain returned value", "");
-               (Ld (RR (R dst, reg_ret_value)), "returned value")]
+     in let c_jmp = if flag then
+                      [(Ba (L (recname ^ "_entry")), "tail call")]
+                    else
+                      gen_call_seq ((List.length rands) + 1) (R tm)
+                      @ [(Comment "Obtain returned value", "");
+                         (Ld (RR (R dst, reg_ret_value)), "returned value")]
      in let _ = free_reg tm
-        in (code0 @ code @ code2 @ code2' @ code3, aux @ List.flatten auxs)
+        in (code0 @ c_op @ c_env @ List.flatten c_args @ c_param @ c_addr @ c_jmp,
+            aux @ List.flatten auxs)
 
 
 
