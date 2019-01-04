@@ -29,9 +29,12 @@ type aexpr = Litexp_A of int
 	   | Primapp_A of prim * aexpr list
 	   | Letexp_A of string list * aexpr list * aexpr
 	   | Ifexp_A of aexpr * aexpr * aexpr
-	   | Procexp_A of type_t list * string list * aexpr * string list (* global names *)
+	   | Procexp_A of type_t list * string list * aexpr
+                          * string list (* global names *)
 	   | Appexp_A of aexpr * aexpr list
-	   | Letrecexp_A of type_t list * string list * type_t list list * string list list * aexpr list * aexpr * string list list (* globalss *)
+	   | Letrecexp_A of type_t list * string list * type_t list list 
+                            * string list list * aexpr list * aexpr 
+                            * string list list (* globalss *)
 
 type aprog = Program_A of aexpr
 

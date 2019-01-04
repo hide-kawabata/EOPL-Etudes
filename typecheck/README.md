@@ -102,7 +102,8 @@ for example, operands for a binary operation are pushed
 when the values are obtaind and
 poped into two registers just before the operation is performed.
 No full-scale register allocation algorithm is used.
-- Frame size is fixed.
+- Frame size changes depending on the number of local variables.
+- A function as a first-class value is represented by a pointer to an instance of a closure structure, in which the address of the code and the environment consisting of values of global variables referenced from the code are stored.
 - The registers used for a stack pointer or a frame pointer
 are designated in the source code of the compiler.
 When you want to change the settings, you should also 
