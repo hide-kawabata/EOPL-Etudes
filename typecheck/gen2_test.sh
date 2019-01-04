@@ -5,12 +5,16 @@ echo test/add2.eopl
 ${GEN} < test/add2.eopl > test/add2.asm
 echo test/even.eopl
 ${GEN} < test/even.eopl > test/even.asm
+echo test/even2.eopl
+${GEN} < test/even2.eopl > test/even2.asm
 echo test/if.eopl
 ${GEN} < test/if.eopl > test/if.asm
 echo test/let.eopl
 ${GEN} < test/let.eopl > test/let.asm
 echo test/let2.eopl
 ${GEN} < test/let2.eopl > test/let2.asm
+echo test/let3.eopl
+${GEN} < test/let3.eopl > test/let3.asm
 echo test/proc.eopl
 ${GEN} < test/proc.eopl > test/proc.asm
 echo test/proc1.eopl
@@ -23,6 +27,8 @@ echo test/proc4.eopl
 ${GEN} < test/proc4.eopl > test/proc4.asm
 echo test/proc5.eopl
 ${GEN} < test/proc5.eopl > test/proc5.asm
+echo test/proc6.eopl
+${GEN} < test/proc6.eopl > test/proc6.asm
 echo test/val.eopl
 ${GEN} < test/val.eopl > test/val.asm
 echo test/tail.eopl

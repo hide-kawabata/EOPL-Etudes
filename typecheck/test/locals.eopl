@@ -1,0 +1,2 @@
+output(+(let a = 1 b = 2 in let a = +(a,b) b = +(a,b) in +(a,b),
+         let a = 4 b = 8 in +(a,b)))

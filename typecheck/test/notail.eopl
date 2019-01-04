@@ -1,0 +1,3 @@
+let f = proc (int x) +(x, 1)
+in let rec int f (int x) = if ==(x, 3) then 3 else (f -(x, 1))
+   in output((f 8))

@@ -1,6 +1,6 @@
-let a = true
-    b = false
-in let rec bool even (int n) = if ==(n, 0) then a else (odd -(n,1))
-           bool odd (int n) = if ==(n, 0) then b else (even -(n,1))
-in (even 25)
+let a = 1
+    b = 0
+in let rec int even (int n) = if ==(n, 0) then a else (odd -(n,1))
+           int odd (int n) = if ==(n, 0) then b else (even -(n,1))
+in output((even 25))
 

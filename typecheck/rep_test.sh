@@ -4,12 +4,16 @@ echo test/add2.eopl
 ./rep_loop < test/add2.eopl
 echo test/even.eopl
 ./rep_loop < test/even.eopl
+echo test/even2.eopl
+./rep_loop < test/even2.eopl
 echo test/if.eopl
 ./rep_loop < test/if.eopl
 echo test/let.eopl
 ./rep_loop < test/let.eopl
 echo test/let2.eopl
 ./rep_loop < test/let2.eopl
+echo test/let3.eopl
+./rep_loop < test/let3.eopl
 echo test/proc.eopl
 ./rep_loop < test/proc.eopl
 echo test/proc1.eopl
@@ -22,6 +26,8 @@ echo test/proc4.eopl
 ./rep_loop < test/proc4.eopl
 echo test/proc5.eopl
 ./rep_loop < test/proc5.eopl
+echo test/proc6.eopl
+./rep_loop < test/proc6.eopl
 echo test/val.eopl
 ./rep_loop < test/val.eopl
 echo test/tail.eopl

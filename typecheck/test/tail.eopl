@@ -1,0 +1,5 @@
+let sum = proc (int n)
+  let rec int sum2 (int n, int a) = if ==(n, 0) then a else (sum2 -(n,1) +(a,n))
+  in (sum2 n 0)
+in
+  output((sum 100))
