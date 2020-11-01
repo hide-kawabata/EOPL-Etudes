@@ -50,6 +50,7 @@ fn cgen_C(c: &C_t) {
 fn cgen_E(e: &E_t) {
     match &*e {
         Var(id) => {
+            // lookup_ip(&id.name); // check the reference
             println!("({})", &id.name);
         },
         Num(i) => {

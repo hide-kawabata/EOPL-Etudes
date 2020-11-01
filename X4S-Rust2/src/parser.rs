@@ -160,15 +160,15 @@ fn nexttoken2() -> Rc<Word> {
     LASTTK.with(|last_tk| {
         let mut g = last_tk.borrow_mut(); // RefMut<Rc<>>
         if **g == Empty {
-            println!("(nexttoken2) calling nexttoken()");
+            // println!("(nexttoken2) calling nexttoken()");
             w = Rc::new(nexttoken()); // newly obtained entity
             *g = Rc::clone(&w); // replace the content of the buffer
         } else {
             w = Rc::clone(&g); // reuse buffered entity
         }
     });
-    println!("(nexttoken2) strong_ref {:?}", Rc::strong_count(&w));
-    println!("(nexttoken2) return {:?}", w);
+    // println!("(nexttoken2) strong_ref {:?}", Rc::strong_count(&w));
+    // println!("(nexttoken2) return {:?}", w);
     w
 }
 
