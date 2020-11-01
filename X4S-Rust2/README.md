@@ -36,5 +36,6 @@
 
 # Current status
 - Checks syntax (LL(1) recursive descent parsing)
+  (Note: LALRPOP is used just for implementing a lexer :-p)
 - Checks if references to undefined ids exist
 - Outputs a C program
