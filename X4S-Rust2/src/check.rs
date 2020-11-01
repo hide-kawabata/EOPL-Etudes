@@ -73,7 +73,7 @@ fn check_E(e: &E_t) {
 }
 
 
-fn register_id(id: &str) -> usize {
+pub fn register_id(id: &str) -> usize {
     // println!("(register_id) {}", id);
     let mut count = 999;
     SYMTBL.with(|symtbl| {
