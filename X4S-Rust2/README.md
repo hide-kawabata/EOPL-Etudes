@@ -12,16 +12,9 @@
     Terminals = { ;, print, def, id, num, +, - }
 
 # Examples of programs in X4S
-- 
-``
-    def x 1; print + x 1;
-``
-- 
-``
-    def x 1; def y x 2; print + x y;
-``
-- 
-``def x 1; print y;`` (semantically illegal)
+- ``def x 1; print + x 1;``
+- ``def x 1; def y x 2; print + x y;``
+- ``def x 1; print y;`` (semantically illegal)
 
 # Usage
     > echo 'def x 1; print + x 1;' | cargo run |indent -i4 -di0
