@@ -1,0 +1,20 @@
+use std::str::FromStr;
+use crate::word::Word;
+use crate::word::Word::*;
+
+grammar;
+
+pub TList: Vec<Word> = {
+    <t:Tk> => { let mut v = Vec::new(); v.push(t); v },
+    <t:Tk> <mut tl:TList> => { tl.push(t); tl }
+};
+
+Tk: Word = {
+    "print" => Print,
+    "def" => Def,
+    <s:r"[a-z][a-z0-9]*"> => Id(s.to_string()),
+    <n:r"0|[1-9][0-9]*"> => Num(n.to_string()),
+    "+" => Add,
+    "-" => Sub,
+    ";" => Semic,
+}
